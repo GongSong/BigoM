@@ -45,26 +45,10 @@
                 var dispIgnore = false;
                 var dialog = $( "#dialog-detail" ).dialog({
                     modal: true,
-                    width: 600,
-                    height: 170,
+                    width: '60%',
                     title: "<div class='widget-header widget-header-small'><h4 class='smaller'><i class='icon-ok'></i> Comment </h4></div>",
                     title_html: true,
                     buttons: [
-                        {
-                            text: "Fix",
-                            "class" : "btn btn-primary btn-mini",
-                            "style" : "display:none",
-                            click: function() {
-                                $( this ).dialog( "close" );
-                            }
-                        },
-                        {
-                            text: "Ignore",
-                            "class" : "btn btn-primary btn-mini",
-                            click: function() {
-                                $( this ).dialog( "close" );
-                            }
-                        },
                         {
                             text: "Cancel",
                             "class" : "btn btn-mini",
@@ -350,7 +334,7 @@
 										<thead>
 											<tr>
 												<th class="span1">业务</th>
-												<th class="span2">状态</th>
+												<th class="span2">处理结果</th>
 												<th class="span2">最终更新时间</th>
 											</tr>
 										</thead>
@@ -383,8 +367,8 @@
 										<thead>
 											<tr>
                                                 <th class="span1">ID</th>
-												<th class="span1">动作</th>
-												<th class="span2">状态</th>
+												<th class="span1">状态</th>
+												<th class="span2">处理结果</th>
 												<th class="span2">最终更新时间</th>
 												<th class="span3">内容</th>
 												<th class="span2">操作</th>
@@ -395,7 +379,7 @@
                                             {% for EventLog in EventLogs %}
                                             <tr>
                                                 <td>{{ EventLog.event_id }}</td>
-                                                <td>{{ EventLog.action }}</td>
+                                                <td>{{ EventLog.status }}</td>
                                                 <td>
                                                     {% if EventLog.operation.startswith('ok') %}
                                                     <span class="badge badge-success ">{{ EventLog.operation }}</span>
@@ -419,8 +403,177 @@
                                             </tr>
                                             {% endfor %}
                                             <div id="dialog-detail" class="hide">
-                                                <textarea class="span6" id="operation" placeholder="Default Text"></textarea>
+                                                <div class="row-fluid">
+                                                    <div class="span2">
+
+
+                                                    </div>
+                                                    <div class="span10">
+                                                        <div class="control-group">
+                                                            <label class="control-label">处理方式</label>
+
+                                                            <div class="controls">
+                                                                <label>
+                                                                    <input name="form-field-radio" type="radio" class="ace" />
+                                                                    <span class="lbl">忽略</span>
+                                                                </label>
+
+                                                                <label>
+                                                                    <input name="form-field-radio" type="radio" class="ace" />
+                                                                    <span class="lbl">修复</span>
+                                                                </label>
+
+                                                                <label>
+                                                                    <input name="form-field-radio" type="radio" class="ace" />
+                                                                    <span class="lbl">错误</span>
+                                                                </label>
+                                                            </div>
+                                                            <div class="controls">
+                                                                <textarea class="span12" id="form-field-8" placeholder="Default Text"></textarea>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
                                             </div><!--#dialog-message-->
+
+                                            <div class="hide message-content" id="id-message-content">
+                                                <div class="message-header clearfix">
+                                                    <div class="pull-left">
+                                                        <span class="blue bigger-125"> Clik to open this message </span>
+
+                                                        <div class="space-4"></div>
+
+                                                        <i class="icon-star orange2 mark-star"></i>
+
+                                                        &nbsp;
+                                                        <img class="middle" alt="John's Avatar" src="assets/avatars/avatar.png" width="32" />
+                                                        &nbsp;
+                                                        <a href="#" class="sender">John Doe</a>
+
+                                                        &nbsp;
+                                                        <i class="icon-time bigger-110 orange middle"></i>
+                                                        <span class="time">Today, 7:15 pm</span>
+                                                    </div>
+
+                                                    <div class="action-buttons pull-right">
+                                                        <a href="#">
+                                                            <i class="icon-reply green icon-only bigger-130"></i>
+                                                        </a>
+
+                                                        <a href="#">
+                                                            <i class="icon-mail-forward blue icon-only bigger-130"></i>
+                                                        </a>
+
+                                                        <a href="#">
+                                                            <i class="icon-trash red icon-only bigger-130"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+
+                                                <div class="hr hr-double"></div>
+
+                                                <div class="message-body">
+                                                    <p>
+                                                        Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                                                    </p>
+
+                                                    <p>
+                                                        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                                    </p>
+
+                                                    <p>
+                                                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                                                    </p>
+
+                                                    <p>
+                                                        Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                                                    </p>
+
+                                                    <p>
+                                                        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                                                    </p>
+
+                                                    <p>
+                                                        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                                    </p>
+                                                </div>
+
+                                                <div class="hr hr-double"></div>
+
+                                                <div class="message-attachment clearfix">
+                                                    <div class="attachment-title">
+                                                        <span class="blue bolder bigger-110">Attachments</span>
+                                                        &nbsp;
+                                                        <span class="grey">(2 files, 4.5 MB)</span>
+
+                                                        <div class="inline position-relative">
+                                                            <a href="#" data-toggle="dropdown" class="dropdown-toggle">
+                                                                &nbsp;
+                                                                <i class="icon-caret-down bigger-125 middle"></i>
+                                                            </a>
+
+                                                            <ul class="dropdown-menu dropdown-lighter">
+                                                                <li>
+                                                                    <a href="#">Download all as zip</a>
+                                                                </li>
+
+                                                                <li>
+                                                                    <a href="#">Display in slideshow</a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+
+                                                    &nbsp;
+                                                    <ul class="attachment-list pull-left unstyled">
+                                                        <li>
+                                                            <a href="#" class="attached-file inline">
+                                                                <i class="icon-file-alt bigger-110 middle"></i>
+                                                                <span class="attached-name middle">Document1.pdf</span>
+                                                            </a>
+
+                                                            <div class="action-buttons inline">
+                                                                <a href="#">
+                                                                    <i class="icon-download-alt bigger-125 blue"></i>
+                                                                </a>
+
+                                                                <a href="#">
+                                                                    <i class="icon-trash bigger-125 red"></i>
+                                                                </a>
+                                                            </div>
+                                                        </li>
+
+                                                        <li>
+                                                            <a href="#" class="attached-file inline">
+                                                                <i class="icon-film bigger-110 middle"></i>
+                                                                <span class="attached-name middle">Sample.mp4</span>
+                                                            </a>
+
+                                                            <div class="action-buttons inline">
+                                                                <a href="#">
+                                                                    <i class="icon-download-alt bigger-125 blue"></i>
+                                                                </a>
+
+                                                                <a href="#">
+                                                                    <i class="icon-trash bigger-125 red"></i>
+                                                                </a>
+                                                            </div>
+                                                        </li>
+                                                    </ul>
+
+                                                    <div class="attachment-images pull-right">
+                                                        <div class="vspace-4"></div>
+
+                                                        <div>
+                                                            <img width="36" alt="image 4" src="assets/images/gallery/thumb-4.jpg" />
+                                                            <img width="36" alt="image 3" src="assets/images/gallery/thumb-3.jpg" />
+                                                            <img width="36" alt="image 2" src="assets/images/gallery/thumb-2.jpg" />
+                                                            <img width="36" alt="image 1" src="assets/images/gallery/thumb-1.jpg" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div><!--/.message-content-->
 										</tbody>
 									</table>
 								</div>

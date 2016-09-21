@@ -11,7 +11,7 @@ class EventLog(db.Model):
     event_time = db.Column(db.String(8))
     event = db.Column(db.String(16))
     type = db.Column(db.String(16))
-    action = db.Column(db.String(16))
+    status = db.Column(db.String(16))
     content = db.Column(db.Text)
     operation = db.Column(db.String(16))
 
@@ -39,23 +39,6 @@ class EventLog(db.Model):
         return EventLog.query.filter_by(host=host, event=event).order_by(EventLog.event_date.desc(), EventLog.event_time.desc()).first()
 
     @staticmethod
-    def insertEventLogs(event_logs):
-        for event_log in event_logs:
-            log = EventLog(
-                host = event_log['host'],
-                event_id = event_log['event_id'],
-                event_date=event_log['event_date'],
-                event_time = event_log['event_time'],
-                event = event_log['event'],
-                type = event_log['type'],
-                action = event_log['action'],
-                content = event_log['content'],
-                operation = event_log['operation']
-            )
-            db.session.add(log)
-        db.session.commit()
-
-    @staticmethod
     def insertEventLog(event_log):
         log = EventLog(
             host=event_log['host'],
@@ -64,7 +47,7 @@ class EventLog(db.Model):
             event_time=event_log['event_time'],
             event=event_log['event'],
             type=event_log['type'],
-            action=event_log['action'],
+            status=event_log['status'],
             content=event_log['content'],
             operation=event_log['operation']
         )

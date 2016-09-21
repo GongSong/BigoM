@@ -245,18 +245,18 @@ def postlog():
 
                 operation=''
 
-                if log['action'] == u'executing':
+                if log['status'] == u'executing':
                     operation='ok(executing)'
                     if eventList.scheduled_start_time < log['event_time']:
                         operation ='warning(start delay)'
-                elif log['action'] == u'done':
-                    if not eventLog is None and eventLog.action == u'executing':
+                elif log['status'] == u'done':
+                    if not eventLog is None and eventLog.status == u'executing':
                         operation = 'ok(done)'
                         if eventList.scheduled_end_time < log['event_time']:
                             operation ='warning(end delay)'
                     else:
-                        operation = 'error(no start action)'
-                elif log['action'] == u'error':
+                        operation = 'error(no start)'
+                elif log['status'] == u'error':
                     operation = 'error(custom error)'
                 else:
                     operation = 'unknown'
@@ -268,7 +268,7 @@ def postlog():
                     'event_time': log['event_time'],
                     'event': log['event'],
                     'type': log['type'],
-                    'action': log['action'],
+                    'status': log['status'],
                     'content': log['content'],
                     'operation': operation
                 }
