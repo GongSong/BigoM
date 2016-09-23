@@ -64,21 +64,27 @@ def hostdetail():
     sysDateTime = SysInfoLog.getItemInfo(host, 'date_time')
     for item in items:
         itemInfo = SysInfoLog.getItemInfo(host, item)
+        status = ''
+        css = 'badge badge-grey '
         if itemInfo is not None:
             if itemInfo.startswith('error'):
                 status = 'error'
                 info = itemInfo[len(status)+1:len(itemInfo)-1]
+                css = 'badge badge-important '
             elif itemInfo.startswith('warning'):
                 status = 'warning'
                 info = itemInfo[len(status)+1:len(itemInfo)-1]
+                css = 'badge badge-warning '
             else:
                 status = 'ok'
                 info = itemInfo
+                css = 'badge badge-success '
 
         data={
             'item': itemsname[item],
             'info': info,
-            'status': status
+            'status': status,
+            'css': css
         }
         sysinfoList.append(data)
 
@@ -102,8 +108,41 @@ def hostdetail():
 
     request_event = request.args.get('event')
     eventName = ''
+    eventLogs=[]
     if request_event is not None:
-        eventLogs = EventLog.query.filter_by(host=host, event=request_event).order_by(EventLog.event_time.desc())
+        eventLog = EventLog.query.filter_by(host=host, event=request_event).order_by(EventLog.event_time.desc())
+        for log in eventLog:
+            operation = log.operation
+            sysinfo_id = log.sysinfo_id
+            css = 'badge badge-grey '
+            status = ''
+            if operation is not None:
+                if operation.startswith('error'):
+                    status = 'error'
+                    css = 'badge badge-important '
+                    operation = operation[len(status) + 1:len(operation) - 1]
+                elif operation.startswith('warning'):
+                    status = 'warning'
+                    css = 'badge badge-warning '
+                    operation = operation[len(status) + 1:len(operation) - 1]
+                else:
+                    status = 'ok'
+                    css = 'badge badge-success '
+            status = log.status
+            if status is None:
+                status = ''
+            if sysinfo_id is None:
+                sysinfo_id = 0
+            data = {
+                'event_id': log.event_id,
+                'status': status,
+                'operation': operation,
+                'css': css,
+                'event_time': log.event_time,
+                'content': log.content,
+                'sysinfo_id': sysinfo_id
+            }
+            eventLogs.append(data)
         eventName = EventList.query.filter_by(event=request_event).first().name
     else:
         eventLogs = None
@@ -234,7 +273,7 @@ def postlog():
             'database': sysinfo_database,
             'operation' : sysinfo_operation
         }
-        SysInfoLog.insertSysInfoLog(sysinfo_log)
+        sysinfo_id = SysInfoLog.insertSysInfoLog(sysinfo_log)
 
         event_logs=[]
         request_event_log = json.loads(request.values["event_log"])
@@ -270,10 +309,38 @@ def postlog():
                     'type': log['type'],
                     'status': log['status'],
                     'content': log['content'],
-                    'operation': operation
+                    'operation': operation,
+                    'sysinfo_id': sysinfo_id
                 }
                 EventLog.insertEventLog(event_log)
     except Exception as ex:
         return str(ex)
 
     return 'ok'
+
+@host.route('/showdetail/get-sysinfo-detail/<int:sysinfo_id>')
+def getSysinfoDetail(sysinfo_id):
+    process = request.args.get('process')
+    if not process is None:
+        sysinfo = {}
+        if sysinfo_id is not None and sysinfo_id != 0:
+            sysinfolog = SysInfoLog.getSysInfoLogById(sysinfo_id)
+            if sysinfolog is not None:
+                sysinfo = {
+                    'id': sysinfolog.id,
+                    'host': sysinfolog.host,
+                    'sys_date': sysinfolog.sys_date,
+                    'sys_time': sysinfolog.sys_time,
+                    'cpu': sysinfolog.cpu,
+                    'memory': sysinfolog.memory,
+                    'disk': sysinfolog.disk,
+                    'service': sysinfolog.service,
+                    'database': sysinfolog.database,
+                    'operation': sysinfolog.operation
+                }
+        return jsonify({'sysinfo': sysinfo})
+    else:
+        evnet_id = request.args.get('event_id')
+        comment = request.args.get('comment')
+
+        return jsonify({'result': 'ok'})

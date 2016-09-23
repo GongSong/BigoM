@@ -14,9 +14,14 @@ class EventLog(db.Model):
     status = db.Column(db.String(16))
     content = db.Column(db.Text)
     operation = db.Column(db.String(16))
+    sysinfo_id = db.Column(db.Integer)
 
     def __repr__(self):
         return '<EventLog %r>' % self.host
+
+    @staticmethod
+    def getEventLogById():
+        return EventLog.query.filter_by(id=id)
 
     @staticmethod
     def getErrorCnt(host, event):
@@ -32,7 +37,11 @@ class EventLog(db.Model):
 
     @staticmethod
     def getUnknownCnt(host, event):
-        return EventLog.query.filter_by(host=host, event=event).filter(EventLog.operation.like('unknown%')).count()
+        allCnt = EventLog.query.filter_by(host=host, event=event).count()
+        errorCnt = EventLog.getErrorCnt(host, event)
+        warningCnt = EventLog.getWarningCnt(host, event)
+        okCnt = EventLog.getOkCnt(host, event)
+        return allCnt - errorCnt - warningCnt - okCnt
 
     @staticmethod
     def getLast(host, event):
@@ -49,7 +58,8 @@ class EventLog(db.Model):
             type=event_log['type'],
             status=event_log['status'],
             content=event_log['content'],
-            operation=event_log['operation']
+            operation=event_log['operation'],
+            sysinfo_id=event_log['sysinfo_id']
         )
         db.session.add(log)
         db.session.commit()
@@ -75,6 +85,10 @@ class SysInfoLog(db.Model):
     #     return SysInfoLog.query.filter(SysInfoLog.host==host, SysInfoLog.sys_date>=(datetime.date.today()-datetime.timedelta(day))).order_by(SysInfoLog.sys_date.desc(), SysInfoLog.sys_time.desc()).first()
     def getSysInfoLog(host):
         return SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_date.desc(), SysInfoLog.sys_time.desc()).first()
+
+    @staticmethod
+    def getSysInfoLogById(id):
+        return SysInfoLog.query.filter_by(id=id).one()
 
     @staticmethod
     def getItemInfo(host, item):
@@ -111,6 +125,7 @@ class SysInfoLog(db.Model):
         )
         db.session.add(log)
         db.session.commit()
+        return log.id
 
 class HostList(db.Model):
     __tablename__ = 'host_list'
