@@ -20,10 +20,6 @@ class EventLog(db.Model):
         return '<EventLog %r>' % self.host
 
     @staticmethod
-    def getEventLogById():
-        return EventLog.query.filter_by(id=id)
-
-    @staticmethod
     def getErrorCnt(host, event):
         return EventLog.query.filter_by(host=host, event=event).filter(EventLog.operation.like('error%')).count()
 
@@ -62,6 +58,15 @@ class EventLog(db.Model):
             sysinfo_id=event_log['sysinfo_id']
         )
         db.session.add(log)
+        db.session.commit()
+
+    @staticmethod
+    def getOperationById(id):
+        return EventLog.query.filter_by(id=id).one().operation
+
+    @staticmethod
+    def updateOperationById(id, operation):
+        EventLog.query.filter_by(id=id).update({EventLog.operation:operation})
         db.session.commit()
 
 class SysInfoLog(db.Model):

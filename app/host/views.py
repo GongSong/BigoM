@@ -120,11 +120,9 @@ def hostdetail():
                 if operation.startswith('error'):
                     status = 'error'
                     css = 'badge badge-important '
-                    operation = operation[len(status) + 1:len(operation) - 1]
                 elif operation.startswith('warning'):
                     status = 'warning'
                     css = 'badge badge-warning '
-                    operation = operation[len(status) + 1:len(operation) - 1]
                 else:
                     status = 'ok'
                     css = 'badge badge-success '
@@ -134,6 +132,7 @@ def hostdetail():
             if sysinfo_id is None:
                 sysinfo_id = 0
             data = {
+                'id': log.id,
                 'event_id': log.event_id,
                 'status': status,
                 'operation': operation,
@@ -321,7 +320,7 @@ def postlog():
 @host.route('/showdetail/get-sysinfo-detail/<int:sysinfo_id>')
 def getSysinfoDetail(sysinfo_id):
     process = request.args.get('process')
-    if not process is None:
+    if process is None:
         sysinfo = {}
         if sysinfo_id is not None and sysinfo_id != 0:
             sysinfolog = SysInfoLog.getSysInfoLogById(sysinfo_id)
@@ -340,7 +339,25 @@ def getSysinfoDetail(sysinfo_id):
                 }
         return jsonify({'sysinfo': sysinfo})
     else:
-        evnet_id = request.args.get('event_id')
+        id = request.args.get('id')
+        event_id = request.args.get('event_id')
         comment = request.args.get('comment')
+        operation = EventLog.getOperationById(id)
+        detail = ''
+        if not event_id is None and event_id != '':
+            if not comment is None and comment != '':
+                detail = event_id + ':' + comment
+            else :
+                detail = event_id
+        else:
+            if not comment is None and comment != '':
+                detail = comment
+        if detail != '' :
+            detail = process + '(' + detail + ')'
+        else :
+            detail = process
+        if not operation is None and operation != '':
+            detail = detail + '-' + operation
 
+        EventLog.updateOperationById(id, detail)
         return jsonify({'result': 'ok'})
