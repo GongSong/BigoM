@@ -28,11 +28,12 @@ def hostlist():
                 else:
                     sys_ok_cnt = sys_ok_cnt + 1
         eventLists = EventList.getDailyEventList(host.host)
-        for list in eventLists:
-            event_ok_cnt = event_ok_cnt + EventLog.getOkCnt(host.host, list.event)
-            event_warning_cnt = event_warning_cnt + EventLog.getWarningCnt(host.host, list.event)
-            event_error_cnt = event_error_cnt + EventLog.getErrorCnt(host.host, list.event)
-            event_unknown_cnt = event_unknown_cnt + EventLog.getUnknownCnt(host.host, list.event)
+
+        event_ok_cnt = EventLog.getOkCnt(host.host)
+        event_warning_cnt = EventLog.getWarningCnt(host.host)
+        event_error_cnt = EventLog.getErrorCnt(host.host)
+        event_unknown_cnt = EventLog.getUnknownCnt(host.host)
+
         data = {
             'host': host.host,
             'name': host.name,
@@ -93,7 +94,7 @@ def hostdetail():
     for list in eventLists:
         last = EventLog.getLast(host, list.event)
         if last is not None:
-            date_time = last.event_date + ' ' + last.event_time
+            date_time = last.operation_datetime
 
         data={
             'event': list.event,
@@ -110,7 +111,7 @@ def hostdetail():
     eventName = ''
     eventLogs=[]
     if request_event is not None:
-        eventLog = EventLog.query.filter_by(host=host, event=request_event).order_by(EventLog.event_time.desc())
+        eventLog = EventLog.query.filter_by(host=host, event=request_event, operation_type='root').order_by(EventLog.event_datetime.desc())
         for log in eventLog:
             operation = log.operation
             sysinfo_id = log.sysinfo_id
@@ -135,11 +136,12 @@ def hostdetail():
                 'id': log.id,
                 'event_id': log.event_id,
                 'status': status,
-                'operation': operation,
-                'css': css,
-                'event_time': log.event_time,
+                'event_datetime': log.event_datetime,
                 'content': log.content,
-                'sysinfo_id': sysinfo_id
+                'operation': operation,
+                'operation_datetime': log.operation_datetime,
+                'sysinfo_id': sysinfo_id,
+                'css': css
             }
             eventLogs.append(data)
         eventName = EventList.query.filter_by(event=request_event).first().name
@@ -279,7 +281,7 @@ def postlog():
         if not len(request_event_log) == 0:
             for log in request_event_log:
                 eventList = EventList.query.filter_by(scheduled_type='day', event=log['event']).first()
-                eventLog = EventLog.query.filter_by(host=host, event=log['event'], event_date=log['event_date'], type=log['type']).order_by(EventLog.event_time.desc()).first()
+                eventLog = EventLog.query.filter_by(host=host, event=log['event'], event_datetime=log['event_datetime'], type=log['type']).order_by(EventLog.event_time.desc()).first()
 
                 operation=''
 
@@ -302,7 +304,7 @@ def postlog():
                 event_log = {
                     'host': host,
                     'event_id': log['event_id'],
-                    'event_date': log['event_date'],
+                    'event_datetime': log['event_datetime'],
                     'event_time': log['event_time'],
                     'event': log['event'],
                     'type': log['type'],

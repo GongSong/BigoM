@@ -40,7 +40,7 @@
 
 		<script src="/static/assets/js/ace-extra.min.js"></script>
         <script type="text/javascript">
-            function showdetail(url, log_id, event_id) {
+            function operationdetail(url, log_id, event_id) {
                 $.getJSON(url, function(data) {
                     var sysinfo = data.sysinfo
                     if (sysinfo != null) {
@@ -68,7 +68,7 @@
                         if (sysinfo.service != null) setinfo('#id-info-service', sysinfo.service);
                         if (sysinfo.database != null) setinfo('#id-info-database', sysinfo.database);
                     }
-                    var dialog = $( "#dialog-detail" ).dialog({
+                    var dialog = $( "#dialog-operationdetail" ).dialog({
                         modal: true,
                         width: '70%',
                         height: '360',
@@ -421,12 +421,10 @@
 											<tr>
                                                 <th class="span1">ID</th>
 												<th class="span1">状态</th>
-												<th class="span3">内容</th>
 												<th class="span2">发生时间</th>
-												<th class="span2">处理结果</th>
-
-
-												<th class="span2">操作</th>
+												<th class="span2">最终结果</th>
+                                                <th class="span2">最终时间</th>
+                                                <th class="span2">操作</th>
 											</tr>
 										</thead>
 
@@ -435,20 +433,19 @@
                                             <tr>
                                                 <td>{{ EventLog.event_id }}</td>
                                                 <td>{{ EventLog.status }}</td>
-                                                <td>{{ EventLog.content }}</td>
-                                                <td>{{ EventLog.event_time }}</td>
-                                                <td><span class="{{ EventLog.css }}" style="width:300px;word-wrap:break-word; word-break:normal;
+                                                <td>{{ EventLog.event_datetime }}</td>
+                                                <td><a class="{{ EventLog.css }}" style="word-wrap:break-word; word-break:normal;
                                                      white-space:nowrap;
                                                      text-overflow:ellipsis;
                                                      -o-text-overflow:ellipsis;
-                                                     overflow: hidden;">{{ EventLog.operation }}</span></td>
-
+                                                     overflow: hidden;">{{ EventLog.operation }}</a></td>
+                                                <td>{{ EventLog.operation_datetime }}</td>
                                                 <td>
-                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="showdetail('{{ url_for('host.getSysinfoDetail', sysinfo_id=EventLog.sysinfo_id) }}', '{{ EventLog.id }}', '{{ EventLog.event_id }}')">处理详细</button>
+                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="operationdetail('{{ url_for('host.getSysinfoDetail', sysinfo_id=EventLog.sysinfo_id) }}', '{{ EventLog.id }}', '{{ EventLog.event_id }}')">处理详细</button>
                                                 </td>
                                             </tr>
                                             {% endfor %}
-                                            <div id="dialog-detail" class="hide">
+                                            <div id="dialog-operationdetail" class="hide">
                                                 <div class="row-fluid">
                                                     <div class="span6">
                                                         <h4 class="smaller lighter blue">
@@ -513,9 +510,8 @@
                                                                     <input name="form-field-process" type="radio" class="ace" value="fix" />
                                                                     <span class="lbl">修复</span>
                                                                 </label>
-                                                                <input class="span12" type="text" id="form-field-event-id" placeholder="Event Id" >
 
-                                                                <textarea class="span12" id="form-field-comment" placeholder="Comment" style="height: 105px;"></textarea>
+                                                                <textarea class="span12" id="form-field-comment" placeholder="Comment" style="height: 135px;"></textarea>
                                                             </li>
                                                         </ul>
                                                     </div>
