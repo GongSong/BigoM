@@ -305,12 +305,11 @@ def postlog():
                     'host': host,
                     'event_id': log['event_id'],
                     'event_datetime': log['event_datetime'],
-                    'event_time': log['event_time'],
                     'event': log['event'],
-                    'type': log['type'],
                     'status': log['status'],
                     'content': log['content'],
                     'operation': operation,
+                    'operation_type': 'root',
                     'sysinfo_id': sysinfo_id
                 }
                 EventLog.insertEventLog(event_log)
@@ -319,8 +318,8 @@ def postlog():
 
     return 'ok'
 
-@host.route('/showdetail/get-sysinfo-detail/<int:sysinfo_id>')
-def getSysinfoDetail(sysinfo_id):
+@host.route('/showdetail/operation-detail/<int:sysinfo_id>')
+def operationdetail(sysinfo_id):
     process = request.args.get('process')
     if process is None:
         sysinfo = {}
@@ -345,21 +344,38 @@ def getSysinfoDetail(sysinfo_id):
         event_id = request.args.get('event_id')
         comment = request.args.get('comment')
         operation = EventLog.getOperationById(id)
-        detail = ''
-        if not event_id is None and event_id != '':
-            if not comment is None and comment != '':
-                detail = event_id + ':' + comment
-            else :
-                detail = event_id
-        else:
-            if not comment is None and comment != '':
-                detail = comment
-        if detail != '' :
-            detail = process + '(' + detail + ')'
-        else :
-            detail = process
-        if not operation is None and operation != '':
-            detail = detail + '-' + operation
+        status = process
 
-        EventLog.updateOperationById(id, detail)
+        if not operation is None and operation != '':
+            operation = process + '-' + operation
+
+        eventlog = EventLog.updateOperationById(id, operation)
+
+        event_log = {
+            'host': eventlog.host,
+            'event_id': event_id,
+            'event_datetime': '',
+            'event': eventlog.event,
+            'status': status,
+            'content': comment,
+            'operation': operation,
+            'operation_type': 'branch',
+            'sysinfo_id': ''
+        }
+        EventLog.insertEventLog(event_log)
+
         return jsonify({'result': 'ok'})
+
+@host.route('/showdetail/operation-history/<int:event_id>')
+def operationhistory(event_id):
+    eventLog = EventLog.getOperationHistoryByEventId(event_id)
+    history = []
+    for log in eventLog:
+        data = {
+            'status': log.status,
+            'comment': log.content,
+            'date_time': log.operation_datetime
+        }
+        history.append(data)
+    return jsonify({'result': 'ok', 'history':history})
+

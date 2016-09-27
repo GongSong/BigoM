@@ -40,6 +40,24 @@
 
 		<script src="/static/assets/js/ace-extra.min.js"></script>
         <script type="text/javascript">
+            function operationhistory(url) {
+                $.getJSON(url, function(data) {
+                    if (data.result == 'ok') {
+                        var history = data.history;
+                        for (var i=0;i<=history.length;i++) {
+                            var rd = history[i];
+                            alert(rd);
+                        }
+                        var dialog = $( "#dialog-operationhistory" ).dialog({
+                            modal: true,
+                            width: '35%',
+                            height: '360',
+                            title: "<div class='widget-header widget-header-small'><h4 class='smaller'><i class='icon-ok'></i> 处理履历 </h4></div>",
+                            title_html: true
+                        });
+                    }
+                });
+            }
             function operationdetail(url, log_id, event_id) {
                 $.getJSON(url, function(data) {
                     var sysinfo = data.sysinfo
@@ -434,91 +452,109 @@
                                                 <td>{{ EventLog.event_id }}</td>
                                                 <td>{{ EventLog.status }}</td>
                                                 <td>{{ EventLog.event_datetime }}</td>
-                                                <td><a class="{{ EventLog.css }}" style="word-wrap:break-word; word-break:normal;
+                                                <td><a href="{{ url_for('host.hostdetail', host=Host) }}" data-action="reload"
+                                                     class="{{ EventLog.css }}" style="word-wrap:break-word; word-break:normal;
                                                      white-space:nowrap;
                                                      text-overflow:ellipsis;
                                                      -o-text-overflow:ellipsis;
-                                                     overflow: hidden;">{{ EventLog.operation }}</a></td>
+                                                     overflow: hidden;" >{{ EventLog.operation }}</a></td>
                                                 <td>{{ EventLog.operation_datetime }}</td>
                                                 <td>
-                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="operationdetail('{{ url_for('host.getSysinfoDetail', sysinfo_id=EventLog.sysinfo_id) }}', '{{ EventLog.id }}', '{{ EventLog.event_id }}')">处理详细</button>
+                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="operationdetail('{{ url_for('host.operationdetail', sysinfo_id=EventLog.sysinfo_id) }}', '{{ EventLog.id }}', '{{ EventLog.event_id }}')">处理详细</button>
                                                 </td>
                                             </tr>
                                             {% endfor %}
-                                            <div id="dialog-operationdetail" class="hide">
-                                                <div class="row-fluid">
-                                                    <div class="span6">
-                                                        <h4 class="smaller lighter blue">
-															<i class="icon-list"></i>
-															系统情报
-														</h4>
-
-														<ul class="item-list">
-															<li class="item-blue ">
-                                                                <label class="span2 inline"> CPU</label>
-																<label class="inline">
-																	<span id="id-info-cpu"></span>
-																</label>
-															</li>
-
-															<li class="item-blue ">
-                                                                <label class="span2 inline"> 内存</label>
-																<label class="inline">
-                                                                    <span id="id-info-memory"></span>
-																</label>
-															</li>
-
-															<li class="item-blue ">
-                                                                <label class="span2 inline"> 磁盘</label>
-																<label class="inline">
-                                                                    <span id="id-info-disk"></span>
-																</label>
-															</li>
-
-															<li class="item-blue ">
-                                                                <label class="span2 inline"> 服务</label>
-																<label class="inline">
-                                                                    <span id="id-info-service"></span>
-																</label>
-															</li>
-
-															<li class="item-blue ">
-                                                                <label class="span2 inline"> 数据库</label>
-																<label class="inline">
-                                                                    <span id="id-info-database"></span>
-																</label>
-															</li>
-														</ul>
-                                                    </div><!--/span-->
-                                                    <div class="span6">
-                                                        <h4 class="smaller lighter blue">
-															<i class="icon-list"></i>
-															处理方式
-														</h4>
-
-                                                        <ul class="item-list">
-															<li class="item-blue ">
-                                                                <label class="inline span2">
-                                                                    <input name="form-field-process" type="radio" class="ace" value="error" />
-                                                                    <span class="lbl">错误</span>
-                                                                </label>
-                                                                <label class="inline span2">
-                                                                    <input name="form-field-process" type="radio" class="ace" value="ignor" />
-                                                                    <span class="lbl">忽略</span>
-                                                                </label>
-                                                                <label class="inline span2">
-                                                                    <input name="form-field-process" type="radio" class="ace" value="fix" />
-                                                                    <span class="lbl">修复</span>
-                                                                </label>
-
-                                                                <textarea class="span12" id="form-field-comment" placeholder="Comment" style="height: 135px;"></textarea>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div><!--#dialog-message-->
 										</tbody>
 									</table>
+                                    <div id="dialog-operationhistory" class="hide">
+                                        <div class="row-fluid">
+                                            <div class="span12">
+                                                <h4 class="smaller lighter blue">
+                                                    <i class="icon-list"></i>
+                                                    处理履历
+                                                </h4>
+                                                <ul class="item-list">
+                                                    <li class="item-blue " style="height:22px; background-color: #f3f3f3">
+                                                        <label class="span4 inline"> <span>状态</span></label>
+                                                        <label class="span4 inline"> 处理时间</label>
+                                                        <label class="span4 inline"> 处理内容</label>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="dialog-operationdetail" class="hide">
+                                        <div class="row-fluid">
+                                            <div class="span6">
+                                                <h4 class="smaller lighter blue">
+                                                    <i class="icon-list"></i>
+                                                    系统情报
+                                                </h4>
+
+                                                <ul class="item-list">
+                                                    <li class="item-blue ">
+                                                        <label class="span2 inline"> CPU</label>
+                                                        <label class="inline">
+                                                            <span id="id-info-cpu"></span>
+                                                        </label>
+                                                    </li>
+
+                                                    <li class="item-blue ">
+                                                        <label class="span2 inline"> 内存</label>
+                                                        <label class="inline">
+                                                            <span id="id-info-memory"></span>
+                                                        </label>
+                                                    </li>
+
+                                                    <li class="item-blue ">
+                                                        <label class="span2 inline"> 磁盘</label>
+                                                        <label class="inline">
+                                                            <span id="id-info-disk"></span>
+                                                        </label>
+                                                    </li>
+
+                                                    <li class="item-blue ">
+                                                        <label class="span2 inline"> 服务</label>
+                                                        <label class="inline">
+                                                            <span id="id-info-service"></span>
+                                                        </label>
+                                                    </li>
+
+                                                    <li class="item-blue ">
+                                                        <label class="span2 inline"> 数据库</label>
+                                                        <label class="inline">
+                                                            <span id="id-info-database"></span>
+                                                        </label>
+                                                    </li>
+                                                </ul>
+                                            </div><!--/span-->
+                                            <div class="span6">
+                                                <h4 class="smaller lighter blue">
+                                                    <i class="icon-list"></i>
+                                                    处理方式
+                                                </h4>
+
+                                                <ul class="item-list">
+                                                    <li class="item-blue ">
+                                                        <label class="inline span2">
+                                                            <input name="form-field-process" type="radio" class="ace" value="error" />
+                                                            <span class="lbl">错误</span>
+                                                        </label>
+                                                        <label class="inline span2">
+                                                            <input name="form-field-process" type="radio" class="ace" value="ignor" />
+                                                            <span class="lbl">忽略</span>
+                                                        </label>
+                                                        <label class="inline span2">
+                                                            <input name="form-field-process" type="radio" class="ace" value="fix" />
+                                                            <span class="lbl">修复</span>
+                                                        </label>
+
+                                                        <textarea class="span12" id="form-field-comment" placeholder="Comment" style="height: 135px;"></textarea>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div><!--#dialog-message-->
 								</div>
 							</div>
                             {% endif %}

@@ -68,6 +68,10 @@ class EventLog(db.Model):
         return EventLog.query.filter_by(host=host, event=event, operation_type='root').order_by(EventLog.operation_datetime.desc()).first()
 
     @staticmethod
+    def getOperationHistory(event_id):
+        return EventLog.query.filter_by(event_id=event_id, operation_type='branch').order_by(EventLog.operation_datetime.desc()).first()
+
+    @staticmethod
     def insertEventLog(event_log):
         log = EventLog(
             host=event_log['host'],
@@ -78,7 +82,7 @@ class EventLog(db.Model):
             content=event_log['content'],
             operation=event_log['operation'],
             operation_type=event_log['operation_type'],
-            operation_datetime=event_log['operation_datetime'],
+            operation_datetime=datetime.utcnow,
             sysinfo_id=event_log['sysinfo_id']
         )
         db.session.add(log)
@@ -92,6 +96,11 @@ class EventLog(db.Model):
     def updateOperationById(id, operation):
         EventLog.query.filter_by(id=id).update({EventLog.operation:operation, EventLog.operation_datetime:datetime.utcnow})
         db.session.commit()
+
+    @staticmethod
+    def getOperationHistoryByEventId(event_id):
+        return EventLog.query.filter_by(event_id=event_id, operation_type='branch').order_by(
+            EventLog.operation_datetime.desc())
 
 class SysInfoLog(db.Model):
     __tablename__ = 'sysinfo_log'
