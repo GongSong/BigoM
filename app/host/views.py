@@ -111,8 +111,8 @@ def hostdetail():
     eventName = ''
     eventLogs=[]
     if request_event is not None:
-        eventLog = EventLog.query.filter_by(host=host, event=request_event, operation_type='root').order_by(EventLog.event_datetime.desc())
-        for log in eventLog:
+        event_log = EventLog.query.filter_by(host=host, event=request_event, operation_type='root').order_by(EventLog.event_datetime.desc())
+        for log in event_log:
             operation = log.operation
             sysinfo_id = log.sysinfo_id
             css = 'badge badge-grey '
@@ -280,33 +280,26 @@ def postlog():
         request_event_log = json.loads(request.values["event_log"])
         if not len(request_event_log) == 0:
             for log in request_event_log:
+                status = log['status']
+                event_datetime = log['event_date'] + ' ' + log['event_time']
                 eventList = EventList.query.filter_by(scheduled_type='day', event=log['event']).first()
-                eventLog = EventLog.query.filter_by(host=host, event=log['event'], event_datetime=log['event_datetime'], type=log['type']).order_by(EventLog.event_time.desc()).first()
-
-                operation=''
-
-                if log['status'] == u'executing':
+                operation = 'unknown'
+                if status == u'executing':
                     operation='ok(executing)'
                     if eventList.scheduled_start_time < log['event_time']:
                         operation ='warning(start delay)'
-                elif log['status'] == u'done':
-                    if not eventLog is None and eventLog.status == u'executing':
-                        operation = 'ok(done)'
-                        if eventList.scheduled_end_time < log['event_time']:
-                            operation ='warning(end delay)'
-                    else:
-                        operation = 'error(no start)'
-                elif log['status'] == u'error':
+                elif status == u'done':
+                    operation = 'ok(done)'
+                    if eventList.scheduled_end_time < log['event_time']:
+                        operation ='warning(end delay)'
+                elif status == u'error':
                     operation = 'error(custom error)'
-                else:
-                    operation = 'unknown'
-
                 event_log = {
                     'host': host,
                     'event_id': log['event_id'],
-                    'event_datetime': log['event_datetime'],
+                    'event_datetime': event_datetime,
                     'event': log['event'],
-                    'status': log['status'],
+                    'status': status,
                     'content': log['content'],
                     'operation': operation,
                     'operation_type': 'root',
@@ -318,10 +311,10 @@ def postlog():
 
     return 'ok'
 
-@host.route('/showdetail/operation-detail/<int:sysinfo_id>')
+@host.route('/operation/detail/<int:sysinfo_id>')
 def operationdetail(sysinfo_id):
-    process = request.args.get('process')
-    if process is None:
+    status = request.args.get('status')
+    if status is None:
         sysinfo = {}
         if sysinfo_id is not None and sysinfo_id != 0:
             sysinfolog = SysInfoLog.getSysInfoLogById(sysinfo_id)
@@ -341,41 +334,40 @@ def operationdetail(sysinfo_id):
         return jsonify({'sysinfo': sysinfo})
     else:
         id = request.args.get('id')
-        event_id = request.args.get('event_id')
         comment = request.args.get('comment')
         operation = EventLog.getOperationById(id)
-        status = process
-
         if not operation is None and operation != '':
-            operation = process + '-' + operation
+            operation = status + '-' + operation
+        else:
+            operation = status
 
-        eventlog = EventLog.updateOperationById(id, operation)
+        event_log = EventLog.updateOperationById(id, operation)
 
-        event_log = {
-            'host': eventlog.host,
-            'event_id': event_id,
-            'event_datetime': '',
-            'event': eventlog.event,
+        log = {
+            'host': event_log.host,
+            'event_id': event_log.event_id,
+            'event_datetime': event_log.event_datetime,
+            'event': event_log.event,
             'status': status,
             'content': comment,
             'operation': operation,
             'operation_type': 'branch',
-            'sysinfo_id': ''
+            'sysinfo_id': sysinfo_id
         }
-        EventLog.insertEventLog(event_log)
+        EventLog.insertEventLog(log)
 
         return jsonify({'result': 'ok'})
 
-@host.route('/showdetail/operation-history/<int:event_id>')
+@host.route('/operation/history/<string:event_id>')
 def operationhistory(event_id):
-    eventLog = EventLog.getOperationHistoryByEventId(event_id)
+    event_log = EventLog.getOperationHistoryByEventId(event_id)
     history = []
-    for log in eventLog:
+    for log in event_log:
         data = {
             'status': log.status,
-            'comment': log.content,
-            'date_time': log.operation_datetime
+            'date_time': log.operation_datetime,
+            'comment': log.content
         }
         history.append(data)
-    return jsonify({'result': 'ok', 'history':history})
 
+    return jsonify({'result': 'ok', 'history': history})
