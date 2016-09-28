@@ -1,8 +1,7 @@
 # coding: utf-8
-from flask import abort, render_template, redirect, flash, \
-    url_for, request, current_app, jsonify
+from flask import abort, render_template, redirect, request, jsonify
 from . import host
-from ..models import EventLog, HostList, EventList, SysInfoLog
+from ..models import EventLog, HostList, EventList, SysInfoLog, PostLog
 import json
 
 @host.route('/hostlist')
@@ -65,33 +64,35 @@ def hostdetail():
     sysDateTime = SysInfoLog.getItemInfo(host, 'date_time')
     for item in items:
         itemInfo = SysInfoLog.getItemInfo(host, item)
+        info = []
         status = ''
-        css = 'badge badge-grey '
         if itemInfo is not None:
-            if itemInfo.startswith('error'):
-                status = 'error'
-                info = itemInfo[len(status)+1:len(itemInfo)-1]
-                css = 'badge badge-important '
-            elif itemInfo.startswith('warning'):
-                status = 'warning'
-                info = itemInfo[len(status)+1:len(itemInfo)-1]
-                css = 'badge badge-warning '
-            else:
-                status = 'ok'
-                info = itemInfo
-                css = 'badge badge-success '
+            ia = itemInfo.split('|')
+            for ii in ia:
+                s = ''
+                if (ii.startswith('error')):
+                    s = 'error'
+                    status = 'error'
+                    ii = ii[len(s)+1:len(ii)-1]
+                elif (ii.startswith('warning')):
+                    s = 'warning'
+                    if status != 'error':
+                        status = 'warning'
+                    ii = ii[len(s) + 1:len(ii) - 1]
+
+                info.append({'info':ii, 'status':s})
 
         data={
             'item': itemsname[item],
             'info': info,
-            'status': status,
-            'css': css
+            'status': status
         }
         sysinfoList.append(data)
 
     eventList = []
     eventLists = EventList.getDailyEventList(host)
     for list in eventLists:
+        date_time = ''
         last = EventLog.getLast(host, list.event)
         if last is not None:
             date_time = last.operation_datetime
@@ -115,18 +116,14 @@ def hostdetail():
         for log in event_log:
             operation = log.operation
             sysinfo_id = log.sysinfo_id
-            css = 'badge badge-grey '
             status = ''
             if operation is not None:
                 if operation.startswith('error'):
                     status = 'error'
-                    css = 'badge badge-important '
                 elif operation.startswith('warning'):
                     status = 'warning'
-                    css = 'badge badge-warning '
                 else:
                     status = 'ok'
-                    css = 'badge badge-success '
             status = log.status
             if status is None:
                 status = ''
@@ -140,8 +137,7 @@ def hostdetail():
                 'content': log.content,
                 'operation': operation,
                 'operation_datetime': log.operation_datetime,
-                'sysinfo_id': sysinfo_id,
-                'css': css
+                'sysinfo_id': sysinfo_id
             }
             eventLogs.append(data)
         eventName = EventList.query.filter_by(event=request_event).first().name
@@ -155,10 +151,10 @@ def postlog():
         if not request.values or not 'event_log' in request.values or not 'sysinfo_log' in request.values or not 'host' in request.values:
             return 'error'
 
-        request_sysinfo_log = json.loads(request.values["sysinfo_log"])
-        host = request.values["host"]
+        request_sysinfo_log = json.loads(request.values['sysinfo_log'])
+        host = request.values['host']
         if HostList.getHostInfo(host) is None:
-           return 'error(no host info in db)'
+           return 'error(host info not in option)'
 
         sysinfo_operation = ''
         sysinfo_host = host
@@ -172,96 +168,74 @@ def postlog():
         sysinfo_error=[]
         sysinfo_warning = []
 
-        if not request_sysinfo_log['sys_date'] or request_sysinfo_log['sys_date'] is None:
-            sysinfo_error.append('no sys_date')
+        if request_sysinfo_log.get('sys_date') is None:
             sysinfo_sys_date = 'error(no sys_date)'
         else:
-            sysinfo_sys_date = request_sysinfo_log['sys_date']
+            sysinfo_sys_date = request_sysinfo_log.get('sys_date')
 
-        if not request_sysinfo_log['sys_time'] or request_sysinfo_log['sys_time'] is None:
-            sysinfo_error.append('no sys_time')
+        if request_sysinfo_log.get('sys_time') is None:
             sysinfo_sys_time = 'error(no sys_time)'
         else:
-            sysinfo_sys_time = request_sysinfo_log['sys_time']
+            sysinfo_sys_time = request_sysinfo_log.get('sys_time')
 
-        if not request_sysinfo_log['cpu'] or request_sysinfo_log['cpu'] is None:
-            sysinfo_error.append('no cpu')
+        if request_sysinfo_log.get('cpu') is None:
             sysinfo_cpu = 'error(cpu)'
-        elif request_sysinfo_log['cpu'] > HostList.getHostInfo(sysinfo_host).max_cpu:
-            sysinfo_warning.append('overload cpu')
-            sysinfo_cpu = 'warning(overload cpu ' + request_sysinfo_log['cpu'] + ')'
+        elif request_sysinfo_log.get('cpu') > HostList.getHostInfo(sysinfo_host).max_cpu:
+            sysinfo_cpu = 'warning(overload cpu :{0}'.format(request_sysinfo_log.get('cpu'))
         else:
-            sysinfo_cpu = request_sysinfo_log['cpu']
+            sysinfo_cpu = request_sysinfo_log.get('cpu')
 
-        if not request_sysinfo_log['memory'] or request_sysinfo_log['memory'] is None:
-            sysinfo_error.append('no memory')
+        if request_sysinfo_log.get('memory') is None:
             sysinfo_memory = 'error(no memory)'
-        elif request_sysinfo_log['memory'] > HostList.getHostInfo(sysinfo_host).max_memory:
-            sysinfo_warning.append('overload memory')
-            sysinfo_memory = 'warning(overload memory' + request_sysinfo_log['memory'] + ')'
+        elif request_sysinfo_log.get('memory') > HostList.getHostInfo(sysinfo_host).max_memory:
+            sysinfo_memory = 'warning(overload memory : {0})'.format(request_sysinfo_log.get('memory'))
         else:
-            sysinfo_memory = request_sysinfo_log['memory']
+            sysinfo_memory = request_sysinfo_log.get('memory')
 
-        if not request_sysinfo_log['disk'] or request_sysinfo_log['disk'] is None:
-            sysinfo_error.append('no disk')
+        if request_sysinfo_log.get('disk') is None:
             sysinfo_disk = 'error(no disk)'
-        elif len(request_sysinfo_log['disk']) > 0:
-            is_warning = 0
-            for info in request_sysinfo_log['disk']:
-                if info['used'] > HostList.getHostInfo(sysinfo_host).max_disk:
-                    sysinfo_warning.append('overload disk ' + info['partion'])
-                    is_warning = 1
-                    sysinfo_disk += 'overload disk ' + info['partion'] + ':' + info['used'] + '|'
+        elif len(request_sysinfo_log.get('disk')) > 0:
+            for info in request_sysinfo_log.get('disk'):
+                if info.get('used') > HostList.getHostInfo(sysinfo_host).max_disk:
+                    sysinfo_disk += 'warning(overload disk : {0} : {1})|'.info.get('partion'), format(info.get('used'))
                 else:
-                    sysinfo_disk += info['partion'] + ':' + info['used'] + '|'
-            if is_warning == 1:
-                sysinfo_disk = 'warning(' + sysinfo_disk + ')'
+                    sysinfo_disk += '{0} : {1}|'.format(info.get('partion'), info.get('used'))
+            if (sysinfo_disk.endswith('|')):
+                sysinfo_disk = sysinfo_disk[:len(sysinfo_disk)-1]
 
-        if not request_sysinfo_log['service'] or request_sysinfo_log['service'] is None:
-            sysinfo_error.append('no service')
+        if request_sysinfo_log.get('service') is None:
             sysinfo_service = 'error(no service)'
         else:
-            sysinfo_service = request_sysinfo_log['service']
+            for info in request_sysinfo_log.get('service'):
+                cpu = 'cpu : {0}'.format(info.get('cpu'))
+                create_time = 'create_time : {0}'.format(info.get('create_time'))
+                pid = 'pid : {0}'.format(info.get('pid'))
+                name = 'name : {0}'.format(info.get('name'))
+                memory = 'memory : {0}'.format(info.get('memory'))
+                sysinfo_service += '{0},{1},{2},{3},{4}|'.format(cpu, create_time, pid, name, memory)
+            if (sysinfo_service.endswith('|')):
+                sysinfo_service = sysinfo_service[:len(sysinfo_service)-1]
 
-        if not request_sysinfo_log['database'] or request_sysinfo_log['database'] is None or len(request_sysinfo_log['database']) == 0:
-            sysinfo_error.append('no database')
+        if request_sysinfo_log.get('database') is None:
             sysinfo_database = 'error(no database)'
+        elif len(request_sysinfo_log.get('database')) == 0:
+            sysinfo_database = 'error(no instance in database)'
         else:
-            is_warning = 0
-            is_error = 0
-            for info in request_sysinfo_log['database']:
-                dbtype = info['dbtype']
-                cnn_cnt = info['cnn_cnt']
-                dbname = info['dbname']
-                dbinfo = dbtype + '/' + str(cnn_cnt) + '@' + dbname
+            for info in request_sysinfo_log.get('database'):
+                dbtype = info.get('dbtype')
+                cnn_cnt = info.get('cnn_cnt')
+                dbname = info.get('dbname')
+                dbinfo = '{0} : {1} : {2}'.format(cnn_cnt, dbtype , dbname)
 
                 if cnn_cnt is None or len(str(cnn_cnt)) == 0:
-                    sysinfo_error.append('can not be connected:' + dbinfo)
-                    sysinfo_database += 'can not be connected:' + dbinfo + '|'
-                    is_error = 1
-
-                if cnn_cnt > HostList.getHostInfo(sysinfo_host).max_postgres:
-                    sysinfo_database += 'overload connection:' + dbinfo + '|'
-                    is_warning = 1
+                    sysinfo_database += 'error(can not be connected : ' + dbinfo + ')|'
+                if (dbtype == 'postgres' and cnn_cnt > HostList.getHostInfo(sysinfo_host).max_postgres) or \
+                    (dbtype == 'mysql' and cnn_cnt > HostList.getHostInfo(sysinfo_host).max_mysql):
+                    sysinfo_database += 'warning(overload connection : ' + dbinfo + ')|'
                 else:
                     sysinfo_database += dbinfo + '|'
-
-            if is_error == 1:
-                sysinfo_database = 'error(' + sysinfo_database + ')'
-            elif is_warning == 1:
-                    sysinfo_database = 'warning(' + sysinfo_database + ')'
-
-        sysinfo_operation = 'ok'
-        if len(sysinfo_error) > 0:
-            sysinfo_operation = 'error('
-            for info in sysinfo_error:
-                sysinfo_operation += info + '\n'
-            sysinfo_operation += ')'
-        if len(sysinfo_warning) > 0:
-            sysinfo_operation = 'warning('
-            for info in sysinfo_warning:
-                sysinfo_operation += info + '\n'
-            sysinfo_operation += ')'
+            if (sysinfo_database.endswith('|')):
+                sysinfo_database = sysinfo_database[:len(sysinfo_database) - 1]
 
         sysinfo_log = {
             'host': sysinfo_host,
@@ -271,18 +245,17 @@ def postlog():
             'memory': sysinfo_memory,
             'disk': sysinfo_disk,
             'service': sysinfo_service,
-            'database': sysinfo_database,
-            'operation' : sysinfo_operation
+            'database': sysinfo_database
         }
         sysinfo_id = SysInfoLog.insertSysInfoLog(sysinfo_log)
 
         event_logs=[]
-        request_event_log = json.loads(request.values["event_log"])
+        request_event_log = json.loads(request.values['event_log'])
         if not len(request_event_log) == 0:
             for log in request_event_log:
-                status = log['status']
-                event_datetime = log['event_date'] + ' ' + log['event_time']
-                eventList = EventList.query.filter_by(scheduled_type='day', event=log['event']).first()
+                status = log.get('status')
+                event_datetime = '{0} {1}'.format(log.get('event_date'), log.get('event_time'))
+                eventList = EventList.query.filter_by(scheduled_type='day', event=log.get('event')).first()
                 operation = 'unknown'
                 if status == u'executing':
                     operation='ok(executing)'
@@ -306,42 +279,59 @@ def postlog():
                     'sysinfo_id': sysinfo_id
                 }
                 EventLog.insertEventLog(event_log)
+        PostLog.insertPostLog(str(request.values), '')
     except Exception as ex:
+        PostLog.insertPostLog(str(request.values), str(ex))
         return str(ex)
 
     return 'ok'
 
-@host.route('/operation/detail/<int:sysinfo_id>')
-def operationdetail(sysinfo_id):
+@host.route('/operation/detail')
+def operationdetail():
     status = request.args.get('status')
     if status is None:
-        sysinfo = {}
-        if sysinfo_id is not None and sysinfo_id != 0:
-            sysinfolog = SysInfoLog.getSysInfoLogById(sysinfo_id)
-            if sysinfolog is not None:
-                sysinfo = {
-                    'id': sysinfolog.id,
-                    'host': sysinfolog.host,
-                    'sys_date': sysinfolog.sys_date,
-                    'sys_time': sysinfolog.sys_time,
-                    'cpu': sysinfolog.cpu,
-                    'memory': sysinfolog.memory,
-                    'disk': sysinfolog.disk,
-                    'service': sysinfolog.service,
-                    'database': sysinfolog.database,
-                    'operation': sysinfolog.operation
-                }
+        sysinfo = []
+        items = ['cpu', 'memory', 'disk', 'service', 'database']
+        itemsname = {'cpu': u'CPU', 'memory': u'内存', 'disk': u'磁盘', 'service': u'服务', 'database': u'数据库'}
+        sysinfo_id = request.args.get('sysinfo_id')
+        for item in items:
+            itemInfo = SysInfoLog.getItemInfo(host, item, sysinfo_id)
+            info = []
+            istatus = ''
+            if itemInfo is not None:
+                ia = itemInfo.split('|')
+                for ii in ia:
+                    s = ''
+                    if (ii.startswith('error')):
+                        s = 'error'
+                        istatus = 'error'
+                        ii = ii[len(s) + 1:len(ii) - 1]
+                    elif (ii.startswith('warning')):
+                        s = 'warning'
+                        if istatus != 'error':
+                            istatus = 'warning'
+                        ii = ii[len(s) + 1:len(ii) - 1]
+
+                    info.append({'info': ii, 'status': s})
+
+            data = {
+                'item': itemsname[item],
+                'info': info,
+                'status': istatus
+            }
+            sysinfo.append(data)
+
         return jsonify({'sysinfo': sysinfo})
     else:
-        id = request.args.get('id')
+        log_id = request.args.get('log_id')
         comment = request.args.get('comment')
-        operation = EventLog.getOperationById(id)
+        operation = EventLog.getOperationById(log_id)
         if not operation is None and operation != '':
             operation = status + '-' + operation
         else:
             operation = status
 
-        event_log = EventLog.updateOperationById(id, operation)
+        event_log = EventLog.updateOperationById(log_id, operation)
 
         log = {
             'host': event_log.host,
@@ -350,21 +340,30 @@ def operationdetail(sysinfo_id):
             'event': event_log.event,
             'status': status,
             'content': comment,
-            'operation': operation,
+            'operation': log_id,
             'operation_type': 'branch',
-            'sysinfo_id': sysinfo_id
+            'sysinfo_id': ''
         }
         EventLog.insertEventLog(log)
 
         return jsonify({'result': 'ok'})
 
-@host.route('/operation/history/<string:event_id>')
-def operationhistory(event_id):
-    event_log = EventLog.getOperationHistoryByEventId(event_id)
+@host.route('/operation/history')
+def operationhistory():
+    event_id = request.args.get('event_id')
+    log_id = request.args.get('log_id')
+    event_log = EventLog.getOperationHistoryByEventId(event_id, log_id)
     history = []
     for log in event_log:
+        status = ''
+        if log.status == 'fix':
+            status = u'修复'
+        elif log.status == 'ignor':
+            status = u'忽略'
+        elif log.status == 'error':
+            status = u'错误'
         data = {
-            'status': log.status,
+            'status': status,
             'date_time': log.operation_datetime,
             'comment': log.content
         }

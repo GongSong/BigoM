@@ -40,10 +40,10 @@
 
 		<script src="/static/assets/js/ace-extra.min.js"></script>
         <script type="text/javascript">
-            function operationhistory(url, ul_id) {
+            function operationhistory(url, log_id, event_id, ul_id) {
                 $(ul_id).empty();
-
-                $.getJSON(url, function(data) {
+                var pdata = { 'log_id':log_id, 'event_id':event_id };
+                $.getJSON(url, pdata, function(data) {
                     if (data.result != null && data.result == 'ok') {
                         var history = data.history;
                         for (var i=0; i<history.length; i++) {
@@ -70,38 +70,58 @@
                     });
                 });
             }
-            function operationdetail(url, log_id) {
-                $.getJSON(url, function(data) {
+            function operationdetail(url, sysinfo_id, log_id, ul_id) {
+                var pdata = { 'sysinfo_id':sysinfo_id};
+                $.getJSON(url, pdata, function(data) {
                     var sysinfo = data.sysinfo
                     if (sysinfo != null) {
-                        function setinfo(id, data) {
-                            var status='';
+                        $(ul_id).empty();
+                        for (var i=0; i<sysinfo.length; i++) {
+                            var info = sysinfo[i].info;
+
+                            var status= sysinfo[i].status;
                             var css='badge ';
-                            if (data.startsWith('error')) {
-                                status = 'error';
+                            if (status == 'error') {
                                 css += 'badge-important ';
-                            } else if (data.startsWith('warning')) {
-                                status = 'warning';
+                            } else if (status == 'warning') {
                                 css += 'badge-warning ';
                             } else {
                                 css += 'badge-success ';
                             }
-                            if (status != '') {
-                                data = data.substring(status.length + 1, data.length - 1);
+                            var icon = "        <span class='" + css + "'> &nbsp;</span><br>";
+
+                            var span = '';
+                            for (var j=0; j<info.length; j++) {
+                                var ii = info[j].info;
+                                for (var k=0; k<ii.split(',').length; k++) {
+                                    span += ii.split(',')[k] + '<br>'
+                                }
+{#                                var status= info[j].status;#}
+{#                                var css='badge ';#}
+{#                                if (status == 'error') {#}
+{#                                    css += 'badge-important ';#}
+{#                                } else if (status == 'warning') {#}
+{#                                    css += 'badge-warning ';#}
+{#                                } else {#}
+{#                                    css += 'badge-success ';#}
+{#                                }#}
+{#                                span += "        <span class='" + css + "'>" + ii + "</span><br>";#}
+
                             }
-                            $(id).html(data);
-                            $(id).addClass(css);
+                            var li =
+                            "<li class='item-blue '>" +
+                            "    <label class='span2 inline'> <span class='span8'>" + sysinfo[i].item + '</span>' +  icon + "</label>" +
+                            "    <label class='inline'>" + span +
+                            "    </label>" +
+                            "</li>";
+                            $(ul_id).append(li);
                         }
-                        if (sysinfo.cpu != null) setinfo('#id-info-cpu', sysinfo.cpu);
-                        if (sysinfo.memory != null) setinfo('#id-info-memory', sysinfo.memory);
-                        if (sysinfo.disk != null) setinfo('#id-info-disk', sysinfo.disk);
-                        if (sysinfo.service != null) setinfo('#id-info-service', sysinfo.service);
-                        if (sysinfo.database != null) setinfo('#id-info-database', sysinfo.database);
+
                     }
                     var dialog = $( "#dialog-operationdetail" ).dialog({
                         modal: true,
                         width: '70%',
-                        height: '360',
+                        height: '600',
                         title: "<div class='widget-header widget-header-small'><h4 class='smaller'><i class='icon-ok'></i> 处理详细 </h4></div>",
                         title_html: true,
                         buttons: [
@@ -134,7 +154,7 @@
                                         }
                                     }
 
-                                    var pdata = { 'status':status, 'comment':comment, 'id':log_id};
+                                    var pdata = { 'status':status, 'comment':comment, 'log_id':log_id};
                                     var _self = this;
                                     $.getJSON(url, pdata, function(data) {
                                         if (data.result == 'ok') {
@@ -395,10 +415,40 @@
                                             {% for SysInfo in SysInfoList %}
                                             <tr>
 												<td>
-													<a href="#">{{ SysInfo.item }}</a>
+													<a href="#" class="span9">{{ SysInfo.item }}</a>
+                                                    {% if SysInfo.status == 'error' %}
+                                                        <span class="badge badge-important "> &nbsp;</span>
+                                                    {% elif SysInfo.status == 'warning' %}
+                                                        <span class="badge badge-warning "> &nbsp;</span>
+                                                    {% else %}
+                                                        <span class="badge badge-success "> &nbsp;</span>
+                                                    {% endif %}
 												</td>
 												<td colspan="2">
-													<span class="{{ SysInfo.css }}">{{ SysInfo.info }}</span>
+                                                    {% for info in SysInfo.info %}
+                                                        {% for ii in info.info.split(',') %}
+                                                            {{ ii }}<br>
+                                                        {% endfor %}
+{#                                                        {% if info.status.startswith('error') %}#}
+{#                                                            <span class="badge badge-important ">#}
+{#                                                                {% for ii in info.info.split(',') %}#}
+{#                                                                    {{ ii }}<br>#}
+{#                                                                {% endfor %}#}
+{#                                                            </span><br>#}
+{#                                                        {% elif info.status.startswith('warning') %}#}
+{#                                                            <span class="badge badge-warning ">#}
+{#                                                                {% for ii in info.info.split(',') %}#}
+{#                                                                    {{ ii }}<br>#}
+{#                                                                {% endfor %}#}
+{#                                                            </span><br>#}
+{#                                                        {% else %}#}
+{#                                                            <span class="badge badge-success ">#}
+{#                                                                {% for ii in info.info.split(',') %}#}
+{#                                                                    {{ ii }}<br>#}
+{#                                                                {% endfor %}#}
+{#                                                            </span><br>#}
+{#                                                        {% endif %}#}
+                                                    {% endfor %}
 												</td>
                                             </tr>
                                             {% endfor %}
@@ -457,15 +507,11 @@
                                                 <td>{{ EventLog.event_id }}</td>
                                                 <td>{{ EventLog.status }}</td>
                                                 <td>{{ EventLog.event_datetime }}</td>
-                                                <td><a class="{{ EventLog.css }}" style="word-wrap:break-word; word-break:normal;
-                                                     white-space:nowrap;
-                                                     text-overflow:ellipsis;
-                                                     -o-text-overflow:ellipsis;
-                                                     overflow: hidden;"
-                                                     href="javascript:operationhistory('{{ url_for('host.operationhistory', event_id=EventLog.event_id) }}', '#id-history-ul')">{{ EventLog.operation }}</a></td>
+                                                <td><a class="badge {% if EventLog.operation.startswith('error') %}badge-important {% elif EventLog.operation.startswith('warning') %}badge-warning {% elif EventLog.operation.startswith('ok') or EventLog.operation.startswith('fix') or EventLog.operation.startswith('ignor') %}badge-success {% else %}badge-grey {% endif %}"
+                                                     onclick="javascript:operationhistory('{{ url_for('host.operationhistory') }}', '{{ EventLog.id }}', '{{ EventLog.event_id }}', '#id-history-ul')"> &nbsp;</a> {{ EventLog.operation }} </td>
                                                 <td>{{ EventLog.operation_datetime }}</td>
                                                 <td>
-                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="operationdetail('{{ url_for('host.operationdetail', sysinfo_id=EventLog.sysinfo_id) }}', '{{ EventLog.id }}')">处理详细</button>
+                                                    <button class="btn btn-minier" id="bootbox-regular" onclick="operationdetail('{{ url_for('host.operationdetail') }}', '{{ EventLog.sysinfo_id }}', '{{ EventLog.id }}', '#id-detail-ul')">处理详细</button>
                                                 </td>
                                             </tr>
                                             {% endfor %}
@@ -485,39 +531,39 @@
 															系统情报
 														</h4>
 
-														<ul class="item-list">
+														<ul class="item-list" id="id-detail-ul">
 															<li class="item-blue ">
                                                                 <label class="span2 inline"> CPU</label>
 																<label class="inline">
-																	<span id="id-info-cpu"></span>
+																	<span></span>
 																</label>
 															</li>
 
 															<li class="item-blue ">
                                                                 <label class="span2 inline"> 内存</label>
 																<label class="inline">
-                                                                    <span id="id-info-memory"></span>
+                                                                    <span></span>
 																</label>
 															</li>
 
 															<li class="item-blue ">
                                                                 <label class="span2 inline"> 磁盘</label>
 																<label class="inline">
-                                                                    <span id="id-info-disk"></span>
+                                                                    <span></span>
 																</label>
 															</li>
 
 															<li class="item-blue ">
                                                                 <label class="span2 inline"> 服务</label>
 																<label class="inline">
-                                                                    <span id="id-info-service"></span>
+                                                                    <span></span>
 																</label>
 															</li>
 
 															<li class="item-blue ">
                                                                 <label class="span2 inline"> 数据库</label>
 																<label class="inline">
-                                                                    <span id="id-info-database"></span>
+                                                                    <span></span>
 																</label>
 															</li>
 														</ul>

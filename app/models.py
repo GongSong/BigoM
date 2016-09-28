@@ -23,37 +23,45 @@ class EventLog(db.Model):
     def getErrorCnt(host, event=None):
         if event is None:
             return EventLog.query.filter_by(host=host, operation_type='root').filter(
-                EventLog.operation.like('error%')).group_by(EventLog.host, EventLog.event_id).count()
+                EventLog.operation.like('error%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
         else:
             return EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
-                EventLog.operation.like('error%')).group_by(EventLog.host, EventLog.event_id).count()
+                EventLog.operation.like('error%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
 
     @staticmethod
     def getWarningCnt(host, event=None):
         if event is None:
             return EventLog.query.filter_by(host=host, operation_type='root').filter(
-                EventLog.operation.like('warning%')).group_by(EventLog.host, EventLog.event_id).count()
+                EventLog.operation.like('warning%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
         else:
             return EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
-                EventLog.operation.like('warning%')).group_by(EventLog.host, EventLog.event_id).count()
+                EventLog.operation.like('warning%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
 
     @staticmethod
     def getOkCnt(host, event=None):
         if event is None:
-            return EventLog.query.filter_by(host=host, operation_type='root').filter(
-                EventLog.operation.like('ok%')).group_by(EventLog.host, EventLog.event_id).count()
+            okCnt = EventLog.query.filter_by(host=host, operation_type='root').filter(
+                EventLog.operation.like('ok%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            fixCnt = EventLog.query.filter_by(host=host, operation_type='root').filter(
+                EventLog.operation.like('fix%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            ignorCnt = EventLog.query.filter_by(host=host, operation_type='root').filter(
+                EventLog.operation.like('ignor%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            return okCnt + fixCnt + ignorCnt
         else:
-            return EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
-                EventLog.operation.like('ok%')).group_by(EventLog.host, EventLog.event_id).count()
+            okCnt = EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
+                EventLog.operation.like('ok%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            fixCnt = EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
+                EventLog.operation.like('fix%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            ignorCnt = EventLog.query.filter_by(host=host, event=event, operation_type='root').filter(
+                EventLog.operation.like('ignor%')).group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
+            return okCnt + fixCnt + ignorCnt
 
     @staticmethod
     def getAllCnt(host, event=None):
         if event is None:
-            return EventLog.query.filter_by(host=host, operation_type='root').group_by(EventLog.host,
-                                                                                       EventLog.event_id).count()
+            return EventLog.query.filter_by(host=host, operation_type='root').group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
         else:
-            return EventLog.query.filter_by(host=host, event=event, operation_type='root').group_by(EventLog.host,
-                                                                                                    EventLog.event_id).count()
+            return EventLog.query.filter_by(host=host, event=event, operation_type='root').group_by(EventLog.host, EventLog.event_id, EventLog.status).count()
 
     @staticmethod
     def getUnknownCnt(host, event=None):
@@ -78,7 +86,7 @@ class EventLog(db.Model):
             content=event_log['content'],
             operation=event_log['operation'],
             operation_type=event_log['operation_type'],
-            operation_datetime=datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+            operation_datetime=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             sysinfo_id=event_log['sysinfo_id']
         )
         db.session.add(log)
@@ -89,14 +97,14 @@ class EventLog(db.Model):
         return EventLog.query.filter_by(id=id).one().operation
 
     @staticmethod
-    def updateOperationById(id, operation):
-        EventLog.query.filter_by(id=id).update({EventLog.operation:operation, EventLog.operation_datetime:datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')})
+    def updateOperationById(log_id, operation):
+        EventLog.query.filter_by(id=log_id).update({EventLog.operation:operation, EventLog.operation_datetime:datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
         db.session.commit()
-        return EventLog.query.filter_by(id=id).one()
+        return EventLog.query.filter_by(id=log_id).one()
 
     @staticmethod
-    def getOperationHistoryByEventId(event_id):
-        return EventLog.query.filter_by(event_id=event_id, operation_type='branch').order_by(EventLog.operation_datetime.desc())
+    def getOperationHistoryByEventId(event_id, log_id):
+        return EventLog.query.filter_by(event_id=event_id, operation=log_id, operation_type='branch').order_by(EventLog.operation_datetime.desc())
 
 class SysInfoLog(db.Model):
     __tablename__ = 'sysinfo_log'
@@ -107,7 +115,7 @@ class SysInfoLog(db.Model):
     cpu = db.Column(db.String(128))
     memory = db.Column(db.String(128))
     disk = db.Column(db.String(128))
-    service = db.Column(db.String(128))
+    service = db.Column(db.Text)
     database = db.Column(db.String(128))
     operation = db.Column(db.String(256))
 
@@ -125,9 +133,12 @@ class SysInfoLog(db.Model):
         return SysInfoLog.query.filter_by(id=id).one()
 
     @staticmethod
-    def getItemInfo(host, item):
-        sysInfo = SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_date.desc(),
+    def getItemInfo(host, item, id=None):
+        if id is None:
+            sysInfo = SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_date.desc(),
                                                        SysInfoLog.sys_time.desc()).first()
+        else:
+            sysInfo = SysInfoLog.getSysInfoLogById(id)
         if not sysInfo is None:
             if item == 'cpu' and not sysInfo.cpu is None:
                 return sysInfo.cpu
@@ -145,6 +156,7 @@ class SysInfoLog(db.Model):
                 return ''
         else:
             return ''
+
     @staticmethod
     def insertSysInfoLog(sysinfo_log):
         log = SysInfoLog(
@@ -189,7 +201,7 @@ class EventList(db.Model):
     ok_cnt = db.Column(db.Integer)
     err_cnt = db.Column(db.Integer)
     war_cnt = db.Column(db.Integer)
-    last_time = db.Column(db.DateTime, default=datetime.utcnow)
+    last_time = db.Column(db.DateTime, default=datetime.now)
 
     @staticmethod
     def getDailyEventList(host):
@@ -197,3 +209,18 @@ class EventList(db.Model):
             return EventList.query.filter_by(host=None,scheduled_type='day').order_by(EventList.sort.asc())
         else:
             return EventList.query.filter_by(host=host,scheduled_type='day').order_by(EventList.sort.asc())
+
+class PostLog(db.Model):
+    __tablename__ = 'post_log'
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(db.Text)
+    exception = db.Column(db.Text)
+
+    @staticmethod
+    def insertPostLog(data, exception):
+        log = PostLog(
+            data=data,
+            exception=exception
+        )
+        db.session.add(log)
+        db.session.commit()
