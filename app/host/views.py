@@ -17,13 +17,25 @@ def hostlist():
             items = ['cpu', 'memory', 'disk', 'service', 'database']
             for item in items:
                 itemInfo = SysInfoLog.getItemInfo(info.host, item)
+                status = ''
                 if itemInfo is not None and len(itemInfo) > 0:
-                    if itemInfo.startswith('error'):
-                        sys_error_cnt = sys_error_cnt + 1
-                    elif itemInfo.startswith('warning'):
-                        sys_warning_cnt = sys_warning_cnt + 1
-                    else:
-                        sys_ok_cnt = sys_ok_cnt + 1
+                    ia = itemInfo.split('|')
+                    for ii in ia:
+                        if ii != '':
+                            if (ii.startswith('error')):
+                                status = 'error'
+                            elif (ii.startswith('warning')):
+                                if status != 'error':
+                                    status = 'warning'
+                            else:
+                                status = 'ok'
+
+                        if status == 'error':
+                            sys_error_cnt = sys_error_cnt + 1
+                        elif status == 'warning':
+                            sys_warning_cnt = sys_warning_cnt + 1
+                        else:
+                            sys_ok_cnt = sys_ok_cnt + 1
 
             #业务情报统计信息
             event_ok_cnt = EventLog.getOkCnt(info.host)
