@@ -21,9 +21,9 @@ def deploy(deploy_type):
     # upgrade database to the latest version
     upgrade()
 
-    #if deploy_type == 'product':
-        #EventList.initData()
-        #HostList.initData()
+    if deploy_type == 'product':
+        EventList.initData()
+        HostList.initData()
 
 if __name__ == '__main__':
     manager.run()
