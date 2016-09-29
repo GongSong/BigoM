@@ -30,12 +30,12 @@ def hostlist():
                             else:
                                 status = 'ok'
 
-                        if status == 'error':
-                            sys_error_cnt = sys_error_cnt + 1
-                        elif status == 'warning':
-                            sys_warning_cnt = sys_warning_cnt + 1
-                        else:
-                            sys_ok_cnt = sys_ok_cnt + 1
+                if status == 'error':
+                    sys_error_cnt = sys_error_cnt + 1
+                elif status == 'warning':
+                    sys_warning_cnt = sys_warning_cnt + 1
+                else:
+                    sys_ok_cnt = sys_ok_cnt + 1
 
             #业务情报统计信息
             event_ok_cnt = EventLog.getOkCnt(info.host)
