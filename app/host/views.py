@@ -316,7 +316,7 @@ def operationdetail():
                             ii = ii[len(s) + 1:len(ii) - 1]
                         else:
                             s = 'ok'
-                            status = 'ok'
+                            istatus = 'ok'
 
                     info.append({'info': ii, 'status': s})
 
