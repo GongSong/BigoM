@@ -197,7 +197,7 @@ def postlog():
         elif len(request_sysinfo_log.get('disk')) > 0:
             for info in request_sysinfo_log.get('disk'):
                 if info.get('used') > HostList.getHostInfo(sysinfo_host).max_disk:
-                    sysinfo_disk += 'warning(overload disk : {0} : {1})|'.info.get('partion'), format(info.get('used'))
+                    sysinfo_disk += 'warning(overload disk : {0} : {1})|'.format(info.get('partion'), info.get('used'))
                 else:
                     sysinfo_disk += '{0} : {1}|'.format(info.get('partion'), info.get('used'))
             if (sysinfo_disk.endswith('|')):
