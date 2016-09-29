@@ -76,6 +76,10 @@ class EventLog(db.Model):
         return EventLog.query.filter_by(host=host, event=event, operation_type='root').order_by(EventLog.operation_datetime.desc()).first()
 
     @staticmethod
+    def getRootEventLog(host, event):
+        return EventLog.query.filter_by(host=host, event=event, operation_type='root').order_by(EventLog.event_datetime.desc())
+
+    @staticmethod
     def insertEventLog(event_log):
         log = EventLog(
             host=event_log['host'],
@@ -110,33 +114,31 @@ class SysInfoLog(db.Model):
     __tablename__ = 'sysinfo_log'
     id = db.Column(db.Integer, primary_key=True)
     host = db.Column(db.String(16))
-    sys_date = db.Column(db.String(16))
-    sys_time = db.Column(db.String(16))
+    sys_datetime = db.Column(db.String(20))
     cpu = db.Column(db.String(128))
     memory = db.Column(db.String(128))
     disk = db.Column(db.String(128))
     service = db.Column(db.Text)
     database = db.Column(db.String(128))
-    operation = db.Column(db.String(256))
 
     def __repr__(self):
         return '<SysInfoLog %r>' % self.host
 
     @staticmethod
-    # def getSysInfoLog(host, day=0):
-    #     return SysInfoLog.query.filter(SysInfoLog.host==host, SysInfoLog.sys_date>=(datetime.date.today()-datetime.timedelta(day))).order_by(SysInfoLog.sys_date.desc(), SysInfoLog.sys_time.desc()).first()
     def getSysInfoLog(host):
-        return SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_date.desc(), SysInfoLog.sys_time.desc()).first()
+        return SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_datetime.desc()).first()
 
     @staticmethod
     def getSysInfoLogById(id):
-        return SysInfoLog.query.filter_by(id=id).one()
+        if SysInfoLog.query.filter_by(id=id).count() > 0:
+            return SysInfoLog.query.filter_by(id=id).one()
+        else:
+            return None
 
     @staticmethod
     def getItemInfo(host, item, id=None):
         if id is None:
-            sysInfo = SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_date.desc(),
-                                                       SysInfoLog.sys_time.desc()).first()
+            sysInfo = SysInfoLog.query.filter_by(host=host).order_by(SysInfoLog.sys_datetime.desc()).first()
         else:
             sysInfo = SysInfoLog.getSysInfoLogById(id)
         if not sysInfo is None:
@@ -150,8 +152,8 @@ class SysInfoLog(db.Model):
                 return sysInfo.service
             elif item == 'database' and not sysInfo.database is None:
                 return sysInfo.database
-            elif item == 'date_time' and not sysInfo.sys_date is None and not sysInfo.sys_time is None:
-                return sysInfo.sys_date + ' ' + sysInfo.sys_time
+            elif item == 'date_time' and not sysInfo.sys_datetime is None:
+                return sysInfo.sys_datetime
             else:
                 return ''
         else:
@@ -161,8 +163,7 @@ class SysInfoLog(db.Model):
     def insertSysInfoLog(sysinfo_log):
         log = SysInfoLog(
             host = sysinfo_log['host'],
-            sys_date = sysinfo_log['sys_date'],
-            sys_time = sysinfo_log['sys_time'],
+            sys_datetime = sysinfo_log['sys_datetime'],
             cpu = sysinfo_log['cpu'],
             memory = sysinfo_log['memory'],
             disk = sysinfo_log['disk'],
@@ -178,15 +179,31 @@ class HostList(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     host = db.Column(db.String(16))
     name = db.Column(db.String(32))
-    max_cpu = db.Column(db.String(8))
-    max_memory = db.Column(db.String(8))
-    max_disk = db.Column(db.String(8))
+    max_cpu = db.Column(db.Integer)
+    max_memory = db.Column(db.Integer)
+    max_disk = db.Column(db.Integer)
     max_postgres = db.Column(db.Integer)
     max_mysql = db.Column(db.Integer)
 
     @staticmethod
     def getHostInfo(host):
         return HostList.query.filter_by(host=host).first()
+
+    @staticmethod
+    def getHostList():
+        return HostList.query
+
+    @staticmethod
+    def initData():
+        data = HostList(
+            max_cpu = 50,
+            max_disk = 50,
+            max_memory = 50,
+            max_postgres = 50,
+            max_mysql = 50
+        )
+        db.session.add(data)
+        db.session.commit()
 
 class EventList(db.Model):
     __tablename__ = 'event_list'
@@ -198,17 +215,96 @@ class EventList(db.Model):
     scheduled_end_time = db.Column(db.String(8))
     scheduled_type = db.Column(db.String(8))
     sort = db.Column(db.Integer)
-    ok_cnt = db.Column(db.Integer)
-    err_cnt = db.Column(db.Integer)
-    war_cnt = db.Column(db.Integer)
-    last_time = db.Column(db.DateTime, default=datetime.now)
 
     @staticmethod
     def getDailyEventList(host):
-        if EventList.query.filter_by(host=host,scheduled_type='day').order_by(EventList.sort.asc()).count() == 0:
-            return EventList.query.filter_by(host=None,scheduled_type='day').order_by(EventList.sort.asc())
+        if host is None or host == '' or EventList.query.filter_by(host=host, scheduled_type='day').order_by(EventList.sort.asc()).count() == 0:
+            return EventList.query.filter_by(host=None, scheduled_type='day').order_by(EventList.sort.asc())
         else:
-            return EventList.query.filter_by(host=host,scheduled_type='day').order_by(EventList.sort.asc())
+            return EventList.query.filter_by(host=host, scheduled_type='day').order_by(EventList.sort.asc())
+
+    @staticmethod
+    def getDailyEventInfo(host, event):
+        if host is None or host == '' or EventList.query.filter_by(host=host, event=event, scheduled_type='day').order_by(EventList.sort.asc()).count() == 0:
+            return EventList.query.filter_by(host=None, event=event, scheduled_type='day').first()
+        else:
+            return EventList.query.filter_by(host=host, event=event, scheduled_type='day').first()
+
+    @staticmethod
+    def initData():
+        data = EventList(
+            event = 'dbs',
+            name = u'数据接入',
+            scheduled_type = 'day',
+            sort = 1
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'etl',
+            name = u'数据清理',
+            scheduled_type = 'day',
+            sort = 2
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'mrg',
+            name = u'数据合并',
+            scheduled_type = 'day',
+            sort = 3
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'tag_before',
+            name = u'标签预处理',
+            scheduled_type = 'day',
+            sort = 4
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'tag',
+            name = u'CLV模型',
+            scheduled_type = 'day',
+            sort = 5
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'tag_after',
+            name = u'标签生成',
+            scheduled_type = 'day',
+            sort = 6
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'mkt',
+            name = u'天机模型',
+            scheduled_type = 'day',
+            sort = 7
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'mkt_rpt',
+            name = u'天机报表',
+            scheduled_type = 'day',
+            sort = 8
+        )
+        db.session.add(data)
+
+        data = EventList(
+            event = 'xj_rwd',
+            name = u'玄机数据生成',
+            scheduled_type = 'day',
+            sort = 9
+        )
+        db.session.add(data)
+
+        db.session.commit()
 
 class PostLog(db.Model):
     __tablename__ = 'post_log'
