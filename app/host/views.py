@@ -21,7 +21,7 @@ def hostlist():
                     if itemInfo.startswith('error'):
                         sys_error_cnt = sys_error_cnt + 1
                     elif itemInfo.startswith('warning'):
-                        sys_warning_cnt = sys_error_cnt + 1
+                        sys_warning_cnt = sys_warning_cnt + 1
                     else:
                         sys_ok_cnt = sys_ok_cnt + 1
 
