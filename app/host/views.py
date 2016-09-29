@@ -79,6 +79,7 @@ def hostdetail():
                         ii = ii[len(s) + 1:len(ii) - 1]
                     else:
                         s = 'ok'
+                        status = 'ok'
 
                 info.append({'info':ii, 'status':s})
 
@@ -175,14 +176,14 @@ def postlog():
         elif float(req_cpu) > HostList.getHostInfo(sysinfo_host).max_cpu:
             sysinfo_cpu = 'warning(overload cpu : {0}%)'.format(req_cpu)
         else:
-            sysinfo_cpu = req_cpu
+            sysinfo_cpu = "{0%}".fromat(req_cpu)
 
         if req_memory is None or req_memory == '':
             sysinfo_memory = 'error(no memory)'
         elif float(req_memory) > HostList.getHostInfo(sysinfo_host).max_memory:
             sysinfo_memory = 'warning(overload memory : {0}%)'.format(req_memory)
         else:
-            sysinfo_memory = req_memory
+            sysinfo_memory = "{0%}".fromat(req_memory)
 
         if req_disk is None or req_disk == '':
             sysinfo_disk = 'error(no disk)'
@@ -315,6 +316,7 @@ def operationdetail():
                             ii = ii[len(s) + 1:len(ii) - 1]
                         else:
                             s = 'ok'
+                            status = 'ok'
 
                     info.append({'info': ii, 'status': s})
 
