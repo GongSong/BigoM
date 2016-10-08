@@ -185,26 +185,31 @@ def postlog():
 
         if req_cpu is None or req_cpu == '':
             sysinfo_cpu = 'error(not cpu)'
-        elif float(req_cpu) > HostList.getHostInfo(sysinfo_host).max_cpu:
-            sysinfo_cpu = 'warning(overload cpu : {0}%)'.format(req_cpu)
         else:
-            sysinfo_cpu = "{0}%".format(req_cpu)
+            req_cpu = str(req_cpu).replace('%', '')
+            if float(req_cpu) > HostList.getHostInfo(sysinfo_host).max_cpu:
+                sysinfo_cpu = 'warning(overload cpu : {0}%)'.format(req_cpu)
+            else:
+                sysinfo_cpu = "{0}%".format(req_cpu)
 
         if req_memory is None or req_memory == '':
             sysinfo_memory = 'error(no memory)'
-        elif float(req_memory) > HostList.getHostInfo(sysinfo_host).max_memory:
-            sysinfo_memory = 'warning(overload memory : {0}%)'.format(req_memory)
         else:
-            sysinfo_memory = "{0}%".format(req_memory)
+            req_memory = str(req_memory).replace('%', '')
+            if float(req_memory) > HostList.getHostInfo(sysinfo_host).max_memory:
+                sysinfo_memory = 'warning(overload memory : {0}%)'.format(req_memory)
+            else:
+                sysinfo_memory = "{0}%".format(req_memory)
 
         if req_disk is None or req_disk == '':
             sysinfo_disk = 'error(no disk)'
         elif len(req_disk) > 0:
             for info in req_disk:
-                if float(info.get('used')) > HostList.getHostInfo(sysinfo_host).max_disk:
-                    sysinfo_disk += 'warning(overload disk : {0} : {1}%)|'.format(info.get('partion'), info.get('used'))
+                req_used = str(info.get('used')).replace('%', '')
+                if float(req_used) > HostList.getHostInfo(sysinfo_host).max_disk:
+                    sysinfo_disk += 'warning(overload disk : {0} : {1}%)|'.format(info.get('partion'), req_used)
                 else:
-                    sysinfo_disk += '{0} : {1}%|'.format(info.get('partion'), info.get('used'))
+                    sysinfo_disk += '{0} : {1}%|'.format(info.get('partion'), req_used)
             if (sysinfo_disk.endswith('|')):
                 sysinfo_disk = sysinfo_disk[:len(sysinfo_disk)-1]
 
