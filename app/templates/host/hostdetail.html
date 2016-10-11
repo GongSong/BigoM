@@ -234,7 +234,7 @@
                         "    <div class='name span8'>" +
                         "        <span>" + history[i].status + "</span>" +
                         "    </div>" +
-                        "    <div class='text'>" + history[i].comment + "</div>" +
+                        "    <div class='text'>" + history[i].comment + "&nbsp;</div>" +
                         "</li>";
                         $(ul_id).append(li);
                     }
@@ -259,10 +259,10 @@
         }
         function operationdetail(url, sysinfo_id, log_id, ul_id) {
             var pdata = { 'sysinfo_id':sysinfo_id};
+            $(ul_id).empty();
             $.getJSON(url, pdata, function(data) {
                 var sysinfo = data.sysinfo
                 if (sysinfo != null) {
-                    $(ul_id).empty();
                     for (var i=0; i<sysinfo.length; i++) {
                         var info = sysinfo[i].info;
 

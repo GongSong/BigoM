@@ -108,7 +108,7 @@ class EventLog(db.Model):
 
     @staticmethod
     def getOperationHistoryByEventId(event_id, log_id):
-        return EventLog.query.filter_by(event_id=event_id, operation=log_id, operation_type='branch').order_by(EventLog.operation_datetime.desc())
+        return (EventLog.query.filter_by(id=log_id)).union(EventLog.query.filter_by(event_id=event_id, operation=log_id)).order_by(EventLog.operation_type.asc(), EventLog.operation_datetime.desc())
 
 class SysInfoLog(db.Model):
     __tablename__ = 'sysinfo_log'

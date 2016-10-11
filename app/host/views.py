@@ -14,6 +14,7 @@ def hostlist():
             sys_ok_cnt = 0
             sys_warning_cnt = 0
             sys_error_cnt = 0
+            sys_unknow_cnt = 0
             items = ['cpu', 'memory', 'disk', 'service', 'database']
             for item in items:
                 itemInfo = SysInfoLog.getItemInfo(info.host, item)
@@ -34,8 +35,10 @@ def hostlist():
                     sys_error_cnt = sys_error_cnt + 1
                 elif status == 'warning':
                     sys_warning_cnt = sys_warning_cnt + 1
-                else:
+                elif status == 'ok':
                     sys_ok_cnt = sys_ok_cnt + 1
+                else:
+                    sys_unknow_cnt = sys_unknow_cnt + 1
 
             #业务情报统计信息
             event_ok_cnt = EventLog.getOkCnt(info.host)
@@ -49,6 +52,7 @@ def hostlist():
                 'sys_ok_cnt': sys_ok_cnt,
                 'sys_error_cnt': sys_error_cnt,
                 'sys_warning_cnt': sys_warning_cnt,
+                'sys_unknow_cnt': sys_unknow_cnt,
                 'event_ok_cnt': event_ok_cnt,
                 'event_error_cnt': event_error_cnt,
                 'event_warning_cnt': event_warning_cnt,
@@ -385,10 +389,13 @@ def operationhistory():
             status = u'忽略'
         elif log.status == 'error':
             status = u'错误'
+        else:
+            status = log.status
         data = {
             'status': status,
             'date_time': log.operation_datetime,
-            'comment': log.content
+            'comment': log.content,
+            'operation_type':log.operation_type
         }
         history.append(data)
 
